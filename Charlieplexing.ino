@@ -13,7 +13,9 @@ const int LED_10 = 4;   //LED row 10
 const int LED_11 = 3;   //LED row 11
 
 
-int leds[10][5]={{1,1,1,1}};
+int leds[10][6]={{1,1,1,1,1}};
+//1. plads er x-position 2. plads er y-position 3. plads er bevægelse i y retning 4. plads er bevægelse i x retning 
+//5. plads er x retning cooldown
 int forloop = 200; 
 int X = 0;
 int a;
@@ -21,9 +23,13 @@ int xMax = 11;
 int xMin = 1;
 int yMax = 10;
 int yMin = 1;
+int r = 0;
 
-void setup() 
-{
+#include <Wire.h>
+
+void setup() {
+  Wire.begin(1); 
+  Wire.onReceive(receiveEvent);
   Serial.begin(9600);
 }
 
@@ -37,6 +43,36 @@ void loop(){
   }
 }
 
+void receiveEvent(int howMany) {
+  int len = Wire.available();
+  r = Wire.read();
+  if (r == 1){
+    if (leds[0][3] == 3){
+      leds[0][3] == 1;
+    }
+    else if (leds[0][3] == 2){
+      leds[0][3] == 0;
+    }
+  }
+  else if (r == 2){
+    if (leds[0][3] == 1){
+      leds[0][3] == 3;
+    }
+    else if (leds[0][3] == 0){
+      leds[0][3] == 2;
+    }
+    leds[0][2] = 0;
+  }
+  else if (r == 3){
+    if (leds[0][3] == 1){
+      leds[0][3] == 3;
+    }
+    else if (leds[0][3] == 0){
+      leds[0][3] == 2;
+    }
+    leds[0][2] = 1;
+  }
+}
 
 void diagonal_movement(){
     //moveLeft = leds[X][3]
@@ -47,6 +83,24 @@ void diagonal_movement(){
       }
       else if (leds[i][3]==0){
         leds[i][0] = leds[i][0]-1;
+      }
+      else if (leds[i][3]==2){
+        if (leds[i][4] == 0){
+          leds[i][0] = leds[i][0]-1;
+          leds[i][4] = 1;
+        }
+        else{
+          leds[i][4] = leds[i][4]-1;
+        }
+      }
+      else if (leds[i][3]==3){
+        if (leds[i][4] == 0){
+          leds[i][0] = leds[i][0]+1;
+          leds[i][4] = 1;
+        }
+        else{
+          leds[i][4] = leds[i][4]-1;
+        }
       }
       if (leds[i][2]==1){
         leds[i][1] = leds[i][1]+1;
@@ -63,9 +117,11 @@ void diagonal_movement(){
       }
       if (leds[i][0]==xMax){
         leds[i][3] = 0;
+        send_message();
       }
       else if (leds[i][0]==xMin){
         leds[i][3] = 1;
+        send_message();
       }
       
       if (X == 0){
@@ -75,6 +131,19 @@ void diagonal_movement(){
         X = 0;
       }
     }
+}
+int x = 0;
+int y = 0;
+void send_message(){
+  x = leds[0][0];
+  y = leds[0][1];
+  Serial.println(x);
+  Serial.println(y);
+  Wire.beginTransmission(2);
+  Wire.write(1);
+  Wire.write(x);
+  Wire.write(y);
+  Wire.endTransmission();
 }
 
 void taend_LEDs(){
